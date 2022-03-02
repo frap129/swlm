@@ -55,8 +55,8 @@ class MasterStackLayoutManager(WorkspaceLayoutManager):
                 print(node.ipc_data)
                 print("\n")
                 # Flaot it to remove it from the current layout
-                self.con.command("[con_id=%s] focus" % node.id)
-                self.con.command("floating toggle")
+                #self.con.command("[con_id=%s] focus" % node.id)
+                #self.con.command("floating toggle")
                 untracked.append(node.id)
                 self.log("arrangeExistingLayout: Found untracked window %d" % node.id)
 
@@ -65,7 +65,7 @@ class MasterStackLayoutManager(WorkspaceLayoutManager):
                 self.setStackLayout()
                 # Unfloat the window, then treat it like a new window
                 self.con.command("[con_id=%s] focus" % windowId)
-                self.con.command("floating tooggle")
+                #self.con.command("floating tooggle")
                 self.pushWindow(windowId)
                 self.log("arrangeExistingLayout: Pushed window %d" % windowId)
 
@@ -81,9 +81,6 @@ class MasterStackLayoutManager(WorkspaceLayoutManager):
             return True
 
         if window.workspace() is None:
-            return True
-
-        if window.orientation is None:
             return True
 
         if window.floating is not None and "on" in window.floating:
@@ -119,7 +116,8 @@ class MasterStackLayoutManager(WorkspaceLayoutManager):
 
             # Swap with master
             self.stackIds.append(self.masterId)
-            self.con.command("move left")
+            if (self.stackLayout != "splitv"):
+                self.con.command("move left")
             self.masterId = subject
             self.log("pushWindow: Initialized stack with %d, new master %d" % (self.stackIds[0], subject))
             self.setMasterWidth()
@@ -128,8 +126,9 @@ class MasterStackLayoutManager(WorkspaceLayoutManager):
         # Put new window at top of stack
         target = self.stackIds[-1]
         self.moveWindow(subject, target)
-        self.con.command("[con_id=%s] focus" % subject)
-        self.con.command("move up")
+        if (self.stackLayout != "splitv"):
+            self.con.command("[con_id=%s] focus" % subject)
+            self.con.command("move up")
 
         # Swap with master
         oldMaster = self.masterId
@@ -250,8 +249,9 @@ class MasterStackLayoutManager(WorkspaceLayoutManager):
         self.con.command("[con_id=%d] swap container with con_id %d" % (newMaster, oldMaster))
         self.log("rotateCW: swapped bottom of stack with master")
         self.moveWindow(oldMaster, top)
-        self.con.command("[con_id=%d] focus" % oldMaster)
-        self.con.command("move up")
+        if (self.stackLayout != "splitv"):
+            self.con.command("[con_id=%d] focus" % oldMaster)
+            self.con.command("move up")
         self.con.command("[con_id=%d] focus" % newMaster)
         self.log("rotateCW: Moved previous master to top of stack")
 
@@ -340,7 +340,7 @@ class MasterStackLayoutManager(WorkspaceLayoutManager):
 
         # Handle window if it's not currently being tracked
         if self.masterId != focusedWindow.id and focusedWindow.id not in self.stackIds:
-            self.pushWindow(focusedWindow.id)
+            #self.pushWindow(focusedWindow.id)
             self.log("windowMoved: Pushed untracked window %d" % focusedWindow.id)
             return
 

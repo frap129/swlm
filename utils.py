@@ -71,6 +71,7 @@ def getUserOptions():
                       dest="stackLayout",
                       action="store",
                       metavar="LAYOUT",
+                      default="splitv",
                       help='MasterStack only: The layout of the stack. ("tabbed", "stacked", "splitv") default: splitv',
                       choices=["tabbed", "stacked", "splitv"])  # splith not yet supported
     
