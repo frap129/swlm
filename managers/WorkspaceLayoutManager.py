@@ -17,6 +17,8 @@ swlm. If not, see <https://www.gnu.org/licenses/>.
 """
 
 class WorkspaceLayoutManager:
+    overridesMoveBinds = False
+
     def __init__(self, con, workspace, options):
         self.con = con
         self.workspaceId = workspace.ipc_data["id"]

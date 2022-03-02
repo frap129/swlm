@@ -21,6 +21,8 @@ from managers.WorkspaceLayoutManager import WorkspaceLayoutManager
 import utils
 
 class MasterStackLayoutManager(WorkspaceLayoutManager):
+    overridesMoveBinds = True
+
     def __init__(self, con, workspace, options):
         self.con = con
         self.workspaceId = workspace.ipc_data["id"]
@@ -92,7 +94,7 @@ class MasterStackLayoutManager(WorkspaceLayoutManager):
 
     def setMasterWidth(self):
         if self.masterWidth is not None:
-            self.con.command('[con_id=%s] resize set %s 0 ppt' % (self.masterId, self.masterWidth))
+            self.con.command("[con_id=%s] resize set %s 0 ppt" % (self.masterId, self.masterWidth))
             self.log("Set window %d width to %d" % (self.masterId, self.masterWidth))
 
 
@@ -104,18 +106,22 @@ class MasterStackLayoutManager(WorkspaceLayoutManager):
 
 
     def pushWindow(self, subject):
-        # Check if master is empty too
+        # Check if master is empty
         if self.masterId == 0:
             self.log("pushWindow: Made window %d master" % subject)
             self.masterId = subject
             return
 
-        # Only record window if stack is empty
+        # Check if we need to initialize the stack
         if len(self.stackIds) == 0:
+            # Make sure the new window is in a valid position
+            self.moveWindow(subject, self.masterId)
+
+            # Swap with master
             self.stackIds.append(self.masterId)
-            self.con.command("[con_id=%s] swap container with con_id %s" % (subject, self.masterId))
+            self.con.command("move left")
             self.masterId = subject
-            self.log("pushWindow: Initialized stack with window %d" % subject)
+            self.log("pushWindow: Initialized stack with %d, new master %d" % (self.stackIds[0], subject))
             self.setMasterWidth()
             return
 
@@ -143,8 +149,12 @@ class MasterStackLayoutManager(WorkspaceLayoutManager):
         # Move top of stack to master position
         self.masterId = self.stackIds.pop()
         self.con.command("[con_id=%s] focus" % self.masterId)
-        self.con.command("move left")
-        self.setMasterWidth()
+
+        # If stack is not empty, we need to move the view to the master position
+        if len(self.stackIds) != 0:
+            self.con.command("move left")
+            self.setMasterWidth()
+
         self.log("popWindow: Moved top of stack to master")
 
 
@@ -185,8 +195,16 @@ class MasterStackLayoutManager(WorkspaceLayoutManager):
             return
 
         # Check if we hit bottom of stack
-        if focusedWindow == self.stackIds[0]:
+        if focusedWindow.id == self.stackIds[0]:
             self.log("moveDown: Bottom of stack, nowhere to go")
+            return
+
+        # Swap with top of stack if master is focused
+        if focusedWindow.id == self.masterId:
+            self.con.command("[con_id=%d] swap container with con_id %d" % (focusedWindow.id, self.stackIds[-1]))
+            self.masterId = self.stackIds.pop()
+            self.stackIds.append(focusedWindow.id)
+            self.log("moveDown: Swapped master %d with top of stack %d" % (self.stackIds[-1], self.masterId))
             return
 
         for i in range(len(self.stackIds)):
@@ -287,6 +305,19 @@ class MasterStackLayoutManager(WorkspaceLayoutManager):
 
 
 
+    def removeWindow(self, windowId):
+        if self.masterId == windowId:
+            # If window is master, pop the next one off the stack
+            self.popWindow()
+        else:
+            # If window is not master, remove from stack and exist
+            try:
+                self.stackIds.remove(windowId)
+            except BaseException as e:
+                # This should only happen if an untracked window was closed
+                self.log("windowClosed: WTF: window not master or in stack")
+
+
     def windowCreated(self, event):
         newWindow = utils.findFocused(self.con)
 
@@ -329,17 +360,7 @@ class MasterStackLayoutManager(WorkspaceLayoutManager):
 
     def windowClosed(self, event):
         self.log("Closed window id: %d" % event.container.id)
-
-        if self.masterId == event.container.id:
-            # If window is master, pop the next one off the stack
-            self.popWindow()
-        else:
-            # If window is not master, remove from stack and exist
-            try:
-                self.stackIds.remove(event.container.id)
-            except BaseException as e:
-                # This should only happen if an untracked window was closed
-                self.log("windowClosed: WTF: window not master or in stack")
+        self.removeWindow(event.container.id)
 
 
     def binding(self, command):
@@ -347,9 +368,9 @@ class MasterStackLayoutManager(WorkspaceLayoutManager):
             self.moveUp()
         elif command == "nop swlm move down":
             self.moveDown()
-        elif command == "nop swlm rotate ccw":
+        elif command == "nop swlm rotate ccw" or command == "nop swlm move left":
             self.rotateCCW()
-        elif command == "nop swlm rotate cw":
+        elif command == "nop swlm rotate cw"or command == "nop swlm move right":
             self.rotateCW()
         elif command == "nop swlm swap master":
             self.swapMaster()

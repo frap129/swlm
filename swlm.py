@@ -139,16 +139,25 @@ def recvBinding(con, event):
         return
 
     # Check if command is to create a layout manager
-    if command == "nop layout none":
+    if "nop swlm move" in command and managers[workspace.num].overridesMoveBinds:
+        managers[workspace.num].binding(command)
+        log("recvBinding: Passed bind to manager on workspace %d" % workspace.num)
+        return
+    elif "nop swlm move " in  command:
+        moveCmd = command.replace("nop swlm ", '')
+        con.command(moveCmd)
+        log("recvBinding: Handling bind \"%s\" for workspace %d" % (moveCmd, workspace.num))
+        return
+    elif command == "nop swlm layout none":
         # Create no-op WLM to prevent onWorkspace from overwriting
         managers[workspace.num] = WorkspaceLayoutManager(con, workspace, options)
         log("recvBinding: Destroyed manager on workspace %d" % workspace.num)
         return
-    elif command == "nop layout MasterStack":
+    elif command == "nop swlm layout MasterStack":
         managers[workspace.num] = MasterStackLayoutManager(con, workspace, options)
         log("recvBinding: Created MasterStackLayoutManager on workspace %d" % workspace.num)
         return
-    elif command == "nop layout Autotiling":
+    elif command == "nop swlm layout Autotiling":
         managers[workspace.num] = AutotilingLayoutManager(con, workspace, options)
         log("recvBinding: Created AutotlingLayoutManager on workspace %d" % workspace.num)
         return

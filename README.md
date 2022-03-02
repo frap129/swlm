@@ -27,14 +27,21 @@ Options:
 ```
 
 ### TODO
-
-- [ ] Config file with more options
+- [ ] Improve configuration
+  - [ ] Configuration file with more per-workspace options 
+  - [ ] Load custom WorkspaceLayoutManagers from config path
+  - [ ] Reload config without restarting swlm
+- [ ] Replace "windowClosed?" in WLMs with "windowRemoved", call it when a window closes OR moves to a different workspace
 - [ ] Differentiate WLMs that support managing existing windows
   - [ ] Add warning (swaynag?) when enabling WLMs that don't support existing windows on a workspace with windows
-- [ ] Differentiate WLMs that support window movement
-  - [ ] Add wrappers for window movement. Defaults would be used for WLMs that support movement, but WLMs that don't can override with better defaults (ex for MasterStack: replace up/down with move up/down in stack, left/right with rotation)
 - [ ] More Layouts!
+- [ ] MasterStack:
+  - [ ] Fix stack window sizes changes when moving up/down
+  - [ ] If user changes the size of master, maintain that size
+  - [ ] Automatically arrange pre-existing windows into correct layout
 - [ ] idk im probably forgetting a lot
+- [X] ~Differentiate WLMs that support window movement~
+  - [X] ~Add wrappers for window movement. Defaults would be used for WLMs that support movement, but WLMs that don't can override with better defaults (ex for MasterStack: replace up/down with move up/down in stack, left/right with rotation)~
 
 ## Installation
 
@@ -43,8 +50,17 @@ repositiory and symlink `swlm.py` to `~/.local/bin/swlm` or any directoy in your
 
 ## Layout Managers
 
-The layout manager controlling a workspace can be dynamically changed using the command `nop layout <LAYOUT>`.
-
+The layout manager controlling a workspace can be dynamically changed using the command `nop layout <LAYOUT>`. In
+order to handle window movement in layouts that don't use standard sway up/down/left/right, a WLM can override
+these commands with better defaults, and swlm will fall back the regular command for WLMs that don't. To use the
+WLM provided movement commands, replace your `move <direction>` bindsyms with
+```
+# Override move binds
+bindsym $mod+Shift+Left nop swlm move left
+bindsym $mod+Shift+Down nop swlm move down
+bindsym $mod+Shift+Up nop swlm move up
+bindsym $mod+Shift+Right nop swlm move right
+```
 
 ### none
 
@@ -53,7 +69,7 @@ to disable layout management on a given workspace.
 
 Binding:
 ```
-bindym <your bind here> nop layout none # disable layout management on a workspace
+bindym <your bind here> nop swlm layout none # disable layout management on a workspace
 ```
 
 ### Autotiling
@@ -64,7 +80,7 @@ the `Autotiling` layout manager alternates between splith and splitv based on a 
 
 Binding:
 ```
-bindym <your bind here> nop layout Autotiling # set focused workspace's layout manager to Autotiling
+bindym <your bind here> nop swlm layout Autotiling # set focused workspace's layout manager to Autotiling
 ```
 
 ### MasterStack
@@ -73,17 +89,20 @@ bindym <your bind here> nop layout Autotiling # set focused workspace's layout m
 on the right side. When a new window is created, it replaces master and master is placed on top of the stack.
 If the master window is deleted, the top of the stack replaces master. `MasterStack` implements a keybind for
 swapping. When swapping, the focused window is swapped with master. If the focused window is master, it gets
-swapped with the top of the stack. `MasterStack` also (partially) implements rotation. When rotating, master is
-moved to the bottom of the stack, and the top of the stack becomes the new master. This can be visualized as
-rotating the layout couter-clockwise by 1 window.
+swapped with the top of the stack. `MasterStack` also implements rotation. When rotating counter-clockwise,
+master is moved to the bottom of the stack, and the top of the stack becomes the new master. Conversely,
+rotating clockwise moves master to the top of the stack, and the bottom of the stack becomes the new master.
+
+`MasterStack` provides overrides for `move <directon>` binds. 
 
 Known bugs:
+- Breaks when a window is moved to a different workspace
 - Only works correctly if workspace has no windows when its created.
-- Does not handle manual window movement.
 
 Bindings:
 ```
-bindym <your bind here> nop layout MasterStack # set focused workspace's layout manager to MasterStack
-bindym <your bind here> nop swap master # swap focused window with master
-bindym <your bind here> nop rotate up # rotate layout ccw 1 window
+bindym <your bind here> nop swlm layout MasterStack # set focused workspace's layout manager to MasterStack
+bindym <your bind here> nop swlm swap master # swap focused window with master
+bindym <your bind here> nop swlm rotate cw # rotate layout cw 1 window
+bindym <your bind here> nop swlm rotate ccw # rotate layout ccw 1 window
 ```
