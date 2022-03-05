@@ -28,6 +28,14 @@ def findFocused(con):
     focusedWindow = tree.find_focused()
     return focusedWindow
 
+def findFocusedWorkspace(con):
+    workspace = None
+    for workspace in con.get_workspaces():
+        if workspace.focused:
+            workspace = workspace
+            break
+
+    return workspace
 
 def getUserOptions():
     parser = OptionParser()

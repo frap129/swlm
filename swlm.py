@@ -38,7 +38,7 @@ workspaceWindows = WorkspaceLayoutManagerDict()
 
 def windowCreated(con, event):
     # Check if we should pass this call to a manager
-    workspace = findFocusedWorkspace(con)
+    workspace = utils.findFocusedWorkspace(con)
     if isExcluded(workspace):
         log("Workspace or output excluded")
         return
@@ -60,7 +60,7 @@ def windowCreated(con, event):
 
 def windowFocused(con, event):
     # Check if we should pass this call to a manager
-    workspace = findFocusedWorkspace(con)
+    workspace = utils.findFocusedWorkspace(con)
     if isExcluded(workspace):
         log("Workspace or output excluded")
         return
@@ -76,7 +76,7 @@ def windowFocused(con, event):
 
 def windowClosed(con, event):
     # Check if we should pass this call to a manager
-    workspace = findFocusedWorkspace(con)
+    workspace = utils.findFocusedWorkspace(con)
     if isExcluded(workspace):
         log("Workspace or output excluded")
         return
@@ -139,7 +139,7 @@ def onBinding(con, event):
         return
         
     # Check if we should pass this call to a manager
-    workspace = findFocusedWorkspace(con)
+    workspace = utils.findFocusedWorkspace(con)
     if isExcluded(workspace):
         log("Workspace or output excluded")
         return
@@ -180,7 +180,7 @@ def onBinding(con, event):
 
 
 def onWorkspace(con, event):
-    workspace = findFocusedWorkspace(con)
+    workspace = utils.findFocusedWorkspace(con)
     setWorkspaceLayoutManager(con, workspace)
 
 
@@ -194,16 +194,6 @@ def setWorkspaceLayoutManager(con, workspace):
             logCaller("Initialized workspace %d wth %s" % (workspace.num, managers[workspace.num].shortName))
     if workspace.num not in workspaceWindows:
         workspaceWindows[workspace.num] = []
-
-
-def findFocusedWorkspace(con):
-    workspace = None
-    for workspace in con.get_workspaces():
-        if workspace.focused:
-            workspace = workspace
-            break
-
-    return workspace
 
 
 def log(msg):

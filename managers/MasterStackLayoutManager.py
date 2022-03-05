@@ -33,7 +33,9 @@ class MasterStackLayoutManager(WorkspaceLayoutManager):
         self.debug = options.debug
         self.masterWidth = options.masterWidth
         self.stackLayout = options.stackLayout
-
+        
+        # Handle window if it's not currently being tracked
+        self.arrangeExistingLayout()
 
     def windowAdded(self, event):
         newWindow = utils.findFocused(self.con)
@@ -168,33 +170,36 @@ class MasterStackLayoutManager(WorkspaceLayoutManager):
             self.con.command("[con_id=%d] layout %s" % (self.masterId, "splith"))
 
 
-    def arrangeExistingLayout(self, window):
-        workspace = window.workspace()
-        untracked = [window.id]
+    def arrangeExistingLayout(self):
+        workspace = utils.findFocused(self.con).workspace()
+        untracked = []
         for node in workspace.nodes:
-            if node.id != self.masterId and node.id not in self.stackIds:
+            if len(node.nodes) == 0:
                 # Check if window should remain untracked
                 if (self.isExcluded(node)):
                     continue
 
-                # Flaot it to remove it from the current layout
-                self.con.command("[con_id=%s] focus" % node.id)
-                self.con.command("floating toggle")
                 untracked.append(node.id)
-                self.log("Found untracked window %d" % node.id)
+                self.log("arrangeExistingLayout: Found untracked window %d" % node.id)
+            elif len(node.nodes) > 0:
+                for conNode in node.nodes:
+                    # Check if window should remain untracked
+                    if (self.isExcluded(node)):
+                        continue
 
-        self.setStackLayout()
+                    untracked.append(node.id)
+                    self.log("arrangeExistingLayout: Found untracked window %d" % node.id)  
+
         for windowId in untracked:
             if windowId != self.masterId and windowId not in self.stackIds:
+                self.setStackLayout()
                 # Unfloat the window, then treat it like a new window
                 self.con.command("[con_id=%s] focus" % windowId)
-                self.con.command("floating tooggle")
                 self.pushWindow(windowId)
-                self.log("Pushed window %d" % windowId)
-            else:
-                self.setStackLayout()
+                self.log("arrangeExistingLayout: Pushed window %d" % windowId)
 
-        self.log("masterId is %d" % self.masterId)
+        self.setStackLayout()
+        self.log("arrangeExistingLayout: masterId is %d" % self.masterId)
 
 
     def removeWindow(self, windowId):
